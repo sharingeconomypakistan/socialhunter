@@ -176,7 +176,7 @@ func checkTakeover(socialLinks []string) {
 			if strings.Count(strings.Replace(socialLink, "www.", "", -1), ".") > 1 {
 				continue
 			}
-			u, err := url.Parse(socialLink)
+			u, _ := url.Parse(socialLink)
 			userName := u.Path
 			tempLink := "https://nitter.net" + userName
 			client := &http.Client{}
