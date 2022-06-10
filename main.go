@@ -259,7 +259,7 @@ func visitor(visitURL string, maxDepth int) []string {
 				visitFlag = false
 			}
 
-			if visitFlag == true {
+			if visitFlag {
 				visitedLinks = append(visitedLinks, link)
 				e.Request.Visit(link)
 
