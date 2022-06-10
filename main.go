@@ -46,7 +46,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	urls := strings.Split(string(file), "\n")
+	urls := strings.Split(string(file), EndOfLine)
 	queue = len(urls)
 	fmt.Println("Total URLs:", queue)
 	wp := workerpool.New(*numWorker)
