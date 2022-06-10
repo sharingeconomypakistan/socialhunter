@@ -198,7 +198,6 @@ func checkTakeover(socialLinks []string) {
 			}
 		}
 	}
-	return
 }
 
 func removeDuplicateStr(strSlice []string) []string {
