@@ -16,7 +16,17 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-var userAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36"
+/*
+
+  Samsung Galaxy J6+ User Agent
+  -----------------------------
+  "Mozilla/5.0 (Linux; Android 10; SM-J610F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Mobile Safari/537.36"
+  Samsung Duos User Agent
+  -----------------------
+  "Mozilla/5.0 (Linux; Android 4.4.4; SM-G360H) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Mobile Safari/537.36"
+*/
+//var userAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36"
+var userAgent string = "Mozilla/5.0 (Linux; Android 10; SM-J610F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Mobile Safari/537.36"
 var queue int
 
 func main() {
@@ -33,9 +43,12 @@ func main() {
 	/_/     \_\
 	utkusen.com
 `)
-	urlFile := flag.String("f", "", "Path of the URL file")
 	numWorker := flag.Int("w", 5, "Number of worker.")
+	requestTimeOut := flag.Int("t", 5, "Request time out")
+	urlFile := flag.String("f", "", "Path of the URL file")
+
 	flag.Parse()
+
 	if *urlFile == "" {
 		fmt.Println("Please specify all arguments!")
 		flag.PrintDefaults()
@@ -55,7 +68,7 @@ func main() {
 		url := url
 		wp.Submit(func() {
 			fmt.Println("Checking:", url)
-			action(url)
+			action(url, *requestTimeOut)
 		})
 
 	}
@@ -64,8 +77,11 @@ func main() {
 	color.Cyan("Scan Completed")
 }
 
-func action(url string) {
-	sl := visitor(url, 10)
+func action(url string, requestTimeOut int) {
+	if requestTimeOut == 0 {
+		requestTimeOut = 5
+	}
+	sl := visitor(url, 10, requestTimeOut)
 	checkTakeover(removeDuplicateStr(sl))
 	color.Magenta("Finished Checking: " + url)
 	queue--
@@ -213,15 +229,22 @@ func removeDuplicateStr(strSlice []string) []string {
 	return list
 }
 
-func visitor(visitURL string, maxDepth int) []string {
+func visitor(visitURL string, maxDepth int, requestTimeOut int) []string {
 	socialDomains := []string{"twitter.com", "instagram.com", "facebook.com", "twitch.tv", "tiktok.com"}
 	var socialLinks []string
 	var visitedLinks []string
 	denyList := []string{".js", ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".mp4", ".webm", ".mp3", ".csv", ".ogg", ".wav", ".flac", ".aac", ".wma", ".wmv", ".avi", ".mpg", ".mpeg", ".mov", ".mkv", ".zip", ".rar", ".7z", ".tar", ".iso", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".rtf", ".odt", ".ods", ".odp", ".odg", ".odf", ".odb", ".odc", ".odm", ".avi", ".mpg", ".mpeg", ".mov", ".mkv", ".zip", ".rar", ".7z", ".tar", ".iso", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".rtf", ".odt", ".ods", ".odp", ".odg", ".odf", ".odb", ".odc", ".odm", ".mp4", ".webm", ".mp3", ".ogg", ".wav", ".flac", ".aac", ".wma", ".wmv", ".avi", ".mpg", ".mpeg", ".mov", ".mkv", ".zip", ".rar", ".7z", ".tar", ".iso", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".rtf", ".odt", ".ods", ".odp", ".odg", ".odf", ".odb", ".odc", ".odm", ".mp4", ".webm", ".mp3", ".ogg", ".wav", ".flac", ".aac", ".wma", ".wmv", ".avi", ".mpg", ".mpeg", ".mov", ".mkv", ".zip", ".rar", ".7z", ".tar", ".iso", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".rtf", ".odt"}
 
+	//SONI
+	//fmt.Println("{ ", visitURL, " }")
+
+	if requestTimeOut == 0 {
+		requestTimeOut = 5
+	}
+
 	c := colly.NewCollector()
 	c.UserAgent = userAgent
-	c.SetRequestTimeout(5 * time.Second)
+	c.SetRequestTimeout(time.Duration(requestTimeOut) * time.Second)
 	c.MaxDepth = maxDepth
 	c.AllowURLRevisit = false //there is a bug in colly that prevents this from working. We have to check it manually
 	u, err := url.Parse(visitURL)
@@ -232,17 +255,31 @@ func visitor(visitURL string, maxDepth int) []string {
 	path := u.Path
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		link := e.Request.AbsoluteURL(e.Attr("href"))
+
+		//SONI
+		//fmt.Println("-------> ", link)
+
 		u2, err := url.Parse(link)
 		if err != nil {
 			panic(err)
 		}
 		linkDomain := u2.Host
 		for _, domain := range socialDomains {
+			//SONI
+			//fmt.Println("linkDomain --> ", linkDomain, " Domain --> ", domain)
 			if strings.Contains(linkDomain, domain) {
 				socialLinks = append(socialLinks, e.Request.URL.String()+"|"+link)
 			}
+			//SONI
+			//domain = "SONI.PK"
 		}
+
+		// SONI
+		//fmt.Println("linkDomain --> ", linkDomain, " Domain --> ", domain)
+
 		if strings.Contains(linkDomain, domain) {
+			// SONI
+			//fmt.Println("-----------> linkDomain --> ", linkDomain, " Domain --> ", domain)
 			visitFlag := true
 			for _, extension := range denyList {
 				if strings.Contains(strings.ToLower(link), extension) {
@@ -254,6 +291,9 @@ func visitor(visitURL string, maxDepth int) []string {
 					visitFlag = false
 				}
 			}
+
+			// SONI
+			//fmt.Println("u2.Path -> ", u2.Path, " path -> ", path)
 
 			if !strings.HasPrefix(u2.Path, path) {
 				visitFlag = false
